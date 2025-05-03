@@ -27,6 +27,36 @@ async function run() {
     const database = client.db("MoveZy");
     const userCollection = database.collection("users");
 
+    // Generate JWT token
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "5h",
+      });
+      res.send({ token });
+    });
+
+    // Verify JWT middleware
+    const verifyToken = (req, res, next) => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res
+          .status(401)
+          .send({ message: "Unauthorized access: No token" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res
+            .status(401)
+            .send({ message: "Unauthorized access: Invalid token" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
     // Register a new user
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -46,7 +76,7 @@ async function run() {
     });
 
     // Get user by either id or email
-    app.get("/user/find", async (req, res) => {
+    app.get("/user/find", verifyToken, async (req, res) => {
       const { id, email } = req.query;
 
       let query = {};
