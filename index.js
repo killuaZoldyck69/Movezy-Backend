@@ -45,6 +45,34 @@ async function run() {
       res.send(result);
     });
 
+    // Get user by either id or email
+    app.get("/user/find", async (req, res) => {
+      const { id, email } = req.query;
+
+      let query = {};
+
+      if (id) {
+        query._id = new ObjectId(id); // If an id is provided, query by id
+      }
+
+      if (email) {
+        query.email = email; // If an email is provided, query by email
+      }
+
+      try {
+        const user = await userCollection.findOne(query);
+
+        if (user) {
+          res.send(user);
+        } else {
+          res.status(404).send({ message: "User not found" });
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).send({ message: "Error fetching user" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -58,7 +86,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("MoveZy Backend Server is Running...");
 });
 
 app.listen(port, () => {
